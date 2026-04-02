@@ -3,17 +3,17 @@ pipeline {
 
     environment {
 
-        GIT_REPO = "https://github.com/veeravenkateswararao/onlinebookstoreJava.git"
+        GIT_REPO = "https://github.com/ankitanallamilli/onlinebookstoreJava.git"
         GIT_BRANCH = "master"
 
-        DOCKERHUB_USER = "venkyveera"
-        IMAGE_NAME = "javabook"
+        DOCKERHUB_USER = "ankitanallamilli"
+        IMAGE_NAME = "ankitas-img"
         IMAGE_TAG = "${BUILD_NUMBER}"
 
         DOCKER_CREDS = "Docker_CRED"
 
-        AWS_REGION = "eu-north-1"
-        EKS_CLUSTER = "nareshcluster"
+        AWS_REGION = "us-east-1"
+        EKS_CLUSTER = "saicluster"
     }
 
     stages {
@@ -23,7 +23,7 @@ pipeline {
                 checkout scmGit(
                     branches: [[name: "*/${GIT_BRANCH}"]],
                     userRemoteConfigs: [[
-                        credentialsId: 'venkygit',
+                        credentialsId: 'GIT-Cred',
                         url: "${GIT_REPO}"
                     ]]
                 )
