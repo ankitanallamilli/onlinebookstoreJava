@@ -60,7 +60,7 @@ pipeline {
         }
             stage('Download Artifact from Nexus') {
     steps {
-        withCredentials([usernamePassword(credentialsId: 'nexus-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+        withCredentials([usernamePassword(credentialsId: 'NEXUS-CRED', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
             sh "wget --user=$USER --password=$PASS -O ROOT.war ${NEXUS_URL}/repository/maven-releases/onlinebookstore/onlinebookstore/1.0.0/onlinebookstore-1.0.0.war"
         }
     }
