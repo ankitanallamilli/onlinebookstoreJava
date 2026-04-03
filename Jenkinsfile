@@ -5,9 +5,9 @@ pipeline {
         GIT_BRANCH = "master"
         
         DOCKERHUB_USER = "ankitanallamilli"
-        IMAGE_NAME = "javabook"
+        IMAGE_NAME = "onlinebookstore-img"
         IMAGE_TAG = "${BUILD_NUMBER}"
-        DOCKER_CREDS = "Docker_CRED"
+        DOCKER_CREDS = "ANKITA_DOCK_HUB"
         
         NEXUS_URL = "http://100.28.125.79:8081"
         GROUP_ID = "onlinebookstore"
