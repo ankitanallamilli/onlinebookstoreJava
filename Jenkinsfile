@@ -112,7 +112,7 @@ pipeline {
         }
     }
 }
-stage('Verify Deployment') {
+stage('Verif Deployment') {
     steps {
         withKubeConfig([credentialsId: 'kubeconfig']) {
 
