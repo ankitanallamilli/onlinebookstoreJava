@@ -1,34 +1,71 @@
 pipeline {
     agent any
-
     environment {
-
         GIT_REPO = "https://github.com/ankitanallamilli/onlinebookstoreJava.git"
         GIT_BRANCH = "master"
-
+        
         DOCKERHUB_USER = "ankitanallamilli"
-        IMAGE_NAME = "ankitas-img"
+        IMAGE_NAME = "javabook"
         IMAGE_TAG = "${BUILD_NUMBER}"
-
         DOCKER_CREDS = "Docker_CRED"
-
-        AWS_REGION = "us-east-1"
-        EKS_CLUSTER = "saicluster"
+        
+        NEXUS_URL = "http://100.28.125.79/:8081"
+        GROUP_ID = "onlinebookstore"
+        ARTIFACT_ID = "onlinebookstore"
+        VERSION = "1.0.0"
+        
+        SONARQUBE_ENV = 'sq'
     }
 
-    stages {
-
+      stages {
         stage('Checkout Code') {
             steps {
                 checkout scmGit(
                     branches: [[name: "*/${GIT_BRANCH}"]],
                     userRemoteConfigs: [[
-                        credentialsId: 'GIT-Cred',
+                        credentialsId: 'venkygit',
                         url: "${GIT_REPO}"
                     ]]
                 )
             }
         }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sq') {
+                    sh 'mvn sonar:sonar'
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Build Artifact') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+
+         stage('upload artifact  to nexus') {
+            steps {
+             withMaven(globalMavenSettingsConfig: 'settings.xml', jdk: 'jdk21', maven: 'maven3', traceability: true) {
+            sh 'mvn deploy'
+     }
+            }
+        }
+            stage('Download Artifact from Nexus') {
+    steps {
+        withCredentials([usernamePassword(credentialsId: 'nexus-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+            sh "wget --user=$USER --password=$PASS -O ROOT.war ${NEXUS_URL}/repository/maven-releases/onlinebookstore/onlinebookstore/1.0.0/onlinebookstore-1.0.0.war"
+        }
+    }
+}
 
         stage('Build Docker Image') {
             steps {
@@ -59,37 +96,34 @@ pipeline {
                 """
             }
         }
-
-        stage('Configure EKS Access') {
-            steps {
-                sh """
-                aws eks --region ${AWS_REGION} update-kubeconfig --name ${EKS_CLUSTER}
-                kubectl get nodes
-                """
-            }
-        }
-
         stage('Deploy to Kubernetes') {
-            steps {
-                sh """
-                kubectl apply -f k8s/deployment.yml
-                kubectl apply -f k8s/service.yml
+    steps {
+        withKubeConfig([credentialsId: 'kubeconfig']) {
 
-                kubectl set image deployment/bookstore-deploy \
-                bookstore-container=${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}
+            sh """
+            kubectl apply -f k8s/deployment.yml
+            kubectl apply -f k8s/service.yml
 
-                kubectl rollout status deployment/bookstore-deploy
-                """
-            }
+            kubectl set image deployment/bookstore-deploy \
+            bookstore-container=${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}
+
+            kubectl rollout status deployment/bookstore-deploy
+            """
         }
+    }
+}
+stage('Verify Deployment') {
+    steps {
+        withKubeConfig([credentialsId: 'kubeconfig']) {
 
-        stage('Verify Deployment') {
-            steps {
-                sh """
-                kubectl get pods -o wide
-                kubectl get svc
-                """
-            }
+            sh """
+            kubectl get pods -o wide
+            kubectl get svc
+            """
         }
+    }
+}
+
+        
     }
 }
