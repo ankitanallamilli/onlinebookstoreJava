@@ -14,7 +14,6 @@ pipeline {
         ARTIFACT_ID = "onlinebookstore"
         VERSION = "1.0.0"
         
-        SONARQUBE_ENV = 'sq'
     }
 
       stages {
@@ -32,7 +31,7 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('${SONARQUBE_ENV'}) {
+                withSonarQubeEnv('sq') {
                     sh 'mvn sonar:sonar'
                 }
             }
